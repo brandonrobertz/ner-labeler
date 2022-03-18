@@ -1,0 +1,150 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>NER Labeler</title>
+    <style>
+      body {
+        padding-top: 50px;
+      }
+
+      #json-upload,
+      #file-upload {
+        border: 3px dotted #666;
+        border-radius: 5%;
+        padding: 5rem;
+      }
+      #json-upload p,
+      #file-upload p {
+        padding: 10rem;
+      }
+      #document {
+        font-family: monospace;
+      }
+      .error {
+        color: #e60000;
+      }
+      .hide {
+        display: none;
+      }
+      .label {
+        font-weight: bold;
+        color: white;
+      }
+      .word:hover {
+        background-color: rgba(255, 255, 0, 0.5);
+      }
+
+      .help {
+        cursor: pointer;
+      }
+
+      .multi-select,
+      .labeler-controls .details {
+        font-family: sans-serif;
+      }
+      .labeler-controls .document-name {
+        font-size: 0.9em;
+      }
+
+      .labeler-controls .agency-name {
+        font-weight: bold;
+      }
+
+      .label-selectors .selected {
+        border: 5px solid #ffdd59
+      }
+
+      .labeler-controls {
+        position: fixed;
+        top: 0;
+        background-color: #bbb;
+        padding: 5px;
+        margin-left: -8px;
+        width: 100%;
+      }
+      .labeler-controls .label.selected {
+        border: 5px solid #ffdd59
+      }
+      .labeler-controls .label {
+        padding: 8px 10px 8px 0px;
+        border: 5px solid rgba(0, 0, 0, 0.0);
+        margin-left: 5px;
+        margin-right: 5px;
+      }
+      .labeler-controls .label .key-number {
+        background-color: white;
+        color: #333;
+        padding: 5px;
+        border-right: 3px solid gray;
+        border-top: 3px solid #eee;
+        border-left: 3px solid #fff;
+        border-bottom: 3px solid #666;
+      }
+
+      .label, .word {
+        cursor: pointer;
+      }
+
+      #restore-modal {
+        background-color: #bbb;
+        top: 50px;
+        padding: 20px;
+        width: 100%;
+        left: 0px;
+        position: fixed;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="file-loading">
+      <label for="file-extension">
+        Extension filter:
+        <input id="file-extension"
+               type="text"
+               value=".ocr-txt"
+               placeholder="Enter the extension of files to NER annotate from the folder below" />
+      </label>
+      <br/>
+      <div class="message-area"></div>
+      <label for="file-upload" class="drop-area">
+        <p>Select or drop a folder, or one or more files, to tag</p>
+        <input id="file-upload" type="file" accept=".ocr-txt" directory multiple />
+      </label>
+      <label for="json-upload">
+        <p>Or restore a previous NER labeling session</p>
+        <input id="json-upload" type="file" />
+      </label>
+    </div>
+
+    <div class="labeler hide">
+      <div class="labeler-controls">
+        <button class="prev">Prev</button>
+        <button class="next">Next</button>
+        <!-- <button class="toggle-restore">Restore</button> -->
+        <button class="download">Download</button>
+        <span class="details">
+          <span class="document-n-current"></span> / <span class="document-n-total"></span>
+          <span class="agency-name"></span>
+          <span class="document-name"></span>
+          <span class="document-segment"></span>
+        </span>
+        <span class="multi-select">Multi: <span class="value">off</span></span>
+        <!-- buttons go here on load based on JS labels -->
+        <span class="help">(Help)</span>
+      </div>
+      <div id="restore-modal" style="display: none">
+        <label for="json-restore">
+          <p>Restore and merge a previous NER labeling session</p>
+          <input id="json-restore" type="file" />
+        </label>
+      </div>
+      <div id="document"></div>
+    </div>
+
+    <div id="label-selector" class="hide"></div>
+
+  </body>
+  <script src="/nlp.v3.0.1.js"></script>
+  <script src="/index.js"></script>
+</html>
