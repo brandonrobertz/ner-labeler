@@ -1,79 +1,87 @@
-/*
-Here's a general outline of the data structure for labeled text.
-This can be read (imported) and exported by this application. The
-corresponding FOIA PDF workflow Django application also exports this
-using the segmented PDF data. Any changes here need to be reflected
-there.
- 
- const download_data = {
-  labels: [
-    {
-      label: "DDATE",
-      description: 'Document date, e.g. "Dec 24, 2021"',
-      color: "#f286ff",
-    },
-    {
-      ...
-    }
-  ],
-  version: VERSION,
-  file_data: [
-    {
-      name: "Agency Name/path/to/file.pdf",
-      segment: {
-        index: 0,
-        range: [1, 5]
-      },
-      has_labels: true,
-      data: [{
-        text: "word",
-        id: 1
-      },
-      ...
-      {
-        text: "another",
-        id: 99,
-        label: "ALLEG"
-      }]
-    },
-    ...
-  ]
-};
-*/
+/**
+ * Here's a general outline of the data structure for labeled text.
+ * This can be read (imported) and exported by this application. The
+ * corresponding FOIA PDF workflow Django application also exports this
+ * using the segmented PDF data. Any changes here need to be reflected
+ * there.
+ *  
+ *  const download_data = {
+ *   labels: [
+ *     {
+ *       label: "DDATE",
+ *       description: 'Document date, e.g. "Dec 24, 2021"',
+ *       color: "#f286ff",
+ *     },
+ *     {
+ *       ...
+ *     }
+ *   ],
+ *   version: VERSION,
+ *   file_data: [
+ *     {
+ *       name: "Agency Name/path/to/file.pdf",
+ *       segment: {
+ *         index: 0,
+ *         range: [1, 5]
+ *       },
+ *       has_labels: true,
+ *       data_raw: "Raw document text",
+ *       data: [{
+ *         text: "word",
+ *         id: 1
+ *       },
+ *       ...
+ *       {
+ *         text: "another",
+ *         id: 99,
+ *         label: "ALLEG"
+ *       }]
+ *     },
+ *     ...
+ *   ]
+ * };
+ */
+
 const VERSION = "2.0.0"
 // NOTE: distinct pallette maker: https://mokole.com/palette.html
 let labels = [
   {
-   "label": "DDATE",
-   "description": "Document date, e.g. \"Dec 24, 2021\"",
-   "color": "#f286ff"
+    "label": "DDATE",
+    "description": "Document date, e.g. \"Dec 24, 2021\"",
+    "color": "#f286ff"
   },
   {
-   "label": "IANO",
-   "description": "IA Number",
-   "color": "#2df3df"
+    "label": "IANO",
+    "description": "IA Number",
+    "color": "#2df3df"
   },
   {
-   "label": "OFF",
-   "description": "Begin subject officer, e.g. \"Officer John Smith\"",
-   "color": "#1b9e77"
+    "label": "OFF",
+    "description": "Begin subject officer, e.g. \"Officer John Smith\"",
+    "color": "#1b9e77"
   },
   {
-   "label": "OUT",
-   "description": "Begin outcome, e.g. \"Written Reprimand\"",
-   "color": "#e6ab02"
+    "label": "DIS",
+    "description": "Disposition, e.g. \"Sustained\"",
+    "color": "#bce602"
   },
   {
-   "label": "ALEG",
-   "description": "Begin allgation, e.g. \"Misuse of property\"",
-   "color": "#6686e6"
+    "label": "OUT",
+    "description": "Begin outcome, e.g. \"Written Reprimand\"",
+    "color": "#e6ab02"
   },
   {
-   "label": "IDATE",
-   "description": "Incident date, e.g. \"Dec 24, 2021\"",
-   "color": "#e7298a"
+    "label": "ALEG",
+    "description": "Begin allgation, e.g. \"Misuse of property\"",
+    "color": "#6686e6"
+  },
+  {
+    "label": "IDATE",
+    "description": "Incident date, e.g. \"Dec 24, 2021\"",
+    "color": "#e7298a"
   }
- ];
+];
+
 /*
 Ten distinct colors
 
@@ -101,9 +109,14 @@ navajowhite
 
 // label color lookup table for use in building spans
 const label_colors = {};
-labels.forEach((label) => {
-  label_colors[label.label] = label.color;
-});
+
+function setup_label_colors() {
+  labels.forEach((label) => {
+    label_colors[label.label] = label.color;
+  });
+}
+
+setup_label_colors();
 
 /**
  * Main data structure of all documents w/ labels.
@@ -230,6 +243,7 @@ function text_selected(event) {
   const sel_id = Number.parseInt(event.target.id.split("-")[1]);
   // Mark this document at labeled to simplify post processing
   file_data[current_file_index].has_labels = true;
+  // Label the words selected
   file_data[current_file_index].data.forEach((word_data, i) => {
     if (sel_id !== word_data.id) return;
     console.log("Match", sel_id, "Word_data", word_data);
@@ -250,6 +264,12 @@ function text_selected(event) {
  */
 function display_document(index) {
   const {name, data} = file_data[index];
+  console.log("Displaying document...");
+
+  // wipe labeled, we're going to set them inside the map below
+  document.querySelectorAll(".labeler-controls .label").forEach((el) => {
+    el.classList.remove("labeled");
+  });
 
   // converts our list of tokens with labels to HTML
   // wach word_data should be an object of:
@@ -276,7 +296,12 @@ function display_document(index) {
     if (word_data.label) {
       label_prop = `label="${word_data.label}"`;
       color_prop = `style="background-color: ${label_colors[word_data.label]}"`;
+      // show that we've used this label in this document
+      const lbl_btn = document.querySelector(`button.${word_data.label}`);
+      if (!lbl_btn.classList["labeled"])
+        lbl_btn.classList.add("labeled");
     }
+
     return `<span class='word' ${label_prop} ${color_prop} id='word-${word_data.id}'>${clean_word}</span>`;
   }).filter(x=>x).join("");
 
@@ -329,6 +354,12 @@ function display_document(index) {
       } else {
         text_selected(e);
       }
+
+      // mark the label as labeled
+      const lbl_text = labels[current_label].label;
+      const btn_sel = `.labeler-controls .${lbl_text}.label`;
+      document.querySelector(btn_sel).classList.add("labeled");
+
       // display_document(current_file_index);
       prev_click = e.target;
     });
@@ -337,11 +368,13 @@ function display_document(index) {
 
 function nextDocument() {
   if (current_file_index === (file_data.length - 1)) return;
+  shift_held = false;
   display_document(++current_file_index);
 }
 
 function prevDocument() {
   if (current_file_index === 0) return;
+  shift_held = false;
   display_document(--current_file_index);
 }
 
@@ -351,10 +384,6 @@ function prevDocument() {
 function setup_labeler(file_data) {
   document.querySelector(".labeler .next").addEventListener("click", nextDocument);
   document.querySelector(".labeler .prev").addEventListener("click", prevDocument);
-
-  // initial document display
-  display_document(current_file_index);
-  document.querySelector(".labeler").classList.toggle("hide");
 
   // render the label selector buttons, these let us select
   // which label gets applied to words when clicked
@@ -366,21 +395,55 @@ function setup_labeler(file_data) {
     // button.textContent = label_data.label;
     button.innerHTML = `<span class="key-number">${i===0 ? "\`" : i}</span> ${label_data.label}`
     button.style.backgroundColor = label_data.color;
-    button.className = "label";
+    button.className = `label ${label_data.label}`;
     if (i === 0)
       button.className += " selected";
     document.querySelector(".labeler-controls").appendChild(button);
   });
 
+  // initial document display
+  display_document(current_file_index);
+  document.querySelector(".labeler").classList.toggle("hide");
+
+  // a timeout for the auto-change page events
+  // this is also used as a flag for if we've queued
+  // up a auto-scroll
+  let moveTimeout = null;
+  // whether or not we're currently scrollling, this
+  // gets triggered after we've held the scroll key
+  // for an initial number of time. we use this to
+  // clear a auto-paginate timeout and still allow
+  // a single page change. if we didn't have this we'd
+  // get a double page change every time we let up the
+  // arrow key after holding it
+  let scrolling = false;
+
   // set up key press to change label
   document.addEventListener("keyup", (e) => {
-    console.log("Key up:", e.code);
+    console.log("Key up:", e.code, "timeout", moveTimeout, "scrolling", scrolling);
+
+    const moveKeys = ["KeyN", "ArrowRight", "KeyP", "ArrowLeft"];
+    // clear out a queued page change
+    if (moveTimeout !== null) {
+      console.log("Clearing timeout...", moveTimeout);
+      clearTimeout(moveTimeout);
+      moveTimeout = null;
+    }
+
+    // if we were auto scrolling, stop without doing
+    // another page change on keyup
+    if (scrolling) {
+      console.log("Scrolling", scrolling);
+      scrolling = false;
+      return;
+    }
+
     if (e.code === "Tab") {
       toggle_multi_select();
       return;
-    } else if (e.code === "KeyN") {
+    } else if (e.code === "KeyN" || e.code === "ArrowRight") {
       nextDocument();
-    } else if (e.code === "KeyP") {
+    } else if (e.code === "KeyP" || e.code === "ArrowLeft") {
       prevDocument();
     }
     let digit = null;
@@ -399,7 +462,31 @@ function setup_labeler(file_data) {
     }
     if (!labels[i]) return;
     set_current_label(i);
+
   });
+
+  // hold down movement key handler
+  document.addEventListener("keydown", (e) => {
+    // change the page and set the next page to be changed
+    // in a short timeout, as long as our initial moveTimeout
+    // hasn't been canceled via keyup
+    const handlePageChange = () => {
+      scrolling = true;
+      if (e.code === "KeyN" || e.code === "ArrowRight") {
+        nextDocument();
+      } else if (e.code === "KeyP" || e.code === "ArrowLeft") {
+        prevDocument();
+      }
+      if (moveTimeout)
+        moveTimeout = setTimeout(handlePageChange, 50);
+    };
+
+    // start changing pages in a longer timeout
+    if (!moveTimeout) {
+      moveTimeout = setTimeout(handlePageChange, 1000);
+    }
+  });
+
 
 }
 
@@ -497,91 +584,6 @@ async function files_uploaded(e) {
   setup_labeler(file_data);
 }
 
-function migrate_document(data) {
-  // we're going to tokenize our individual span texts because
-  // they were just whitespace split, not proper tokenization
-  const tokenizer = new TreebankWordTokenizer();
-
-  // create a hidden container to dump our previously
-  // marked up HTML so we can query all the spans
-  const container = document.createElement("div");
-  container.style.display = 'none';
-  container.innerHTML = data;
-
-  // convert our optinally labelled (via bg-color) spans
-  // to token object lists
-  const token_spans = container.querySelectorAll("span");
-  const words = [];
-  token_spans.forEach((el, id) => {
-    let text = el.textContent;
-    /**
-     * This will never get triggered due to our selector query
-     * if (el.tag !== "SPAN") {
-     *     text = el.tag.toLowerCase();
-     * }
-     */
-    const label = label_colors[el.style.backgroundColor];
-    const tokens = tokenizer.tokenize(text);
-    // words are objects of:
-    // { text: "found" }
-    // { text: "Respect", "label": "ALLEG" }
-    tokens.forEach((token) => {
-      const token_data = {
-        text: token,
-      };
-      if (label) token_data.label = label;
-      words.push(token_data);
-    });
-  });
-
-  return words;
-}
-
-/**
- * Convert older versions to the new tokenized version.
- */
-async function migrate(e) {
-  const raw_data = await e.target.files[0].text();
-  const data = JSON.parse(raw_data);
-
-  // version 2.x is tokenized, skip for now
-  // TODO: merge in new documents not already
-  // in our currently loaded dataset
-  if (data.version && data.version.startsWith("2.")) {
-    data.file_data.forEach((file, index) => {
-      if (file.data_raw) {
-        file.data = tokenize_document(file.data_raw);
-        delete file.data_raw;
-      }
-    });
-    console.log("data", data);
-    return data;
-  }
-
-  const new_file_data_map = {};
-  // take from our uploaded file
-  data.file_data.forEach(({name, data}) => {
-    new_file_data_map[name] = migrate_document(data);
-  });
-  // take from our existing loaded documents
-  file_data.forEach(({name, data}) => {
-    // don't overwrite ones loaded from our uploaded file
-    if (new_file_data_map[name]) return;
-    new_file_data_map[name] = data;
-  });
-
-  // flatten and update our loaded data
-  file_data = Object.keys(new_file_data_map).map((name) => {
-    return {
-      name, 
-      data: new_file_data_map[name],
-    };
-  });
-  display_document(current_file_index);
-
-  document.getElementById("restore-modal").style.display = "none";
-}
-
 /**
  * A saved set of labeled documents, for restoring progress.
  */
@@ -589,9 +591,14 @@ async function json_uploaded(e) {
   const raw_data = await e.target.files[0].text();
   const data = JSON.parse(raw_data);
   file_data = data.file_data;
-  if (data.labels) labels = data.labels;
+  if (data.labels) {
+    labels = data.labels;
+    setup_label_colors();
+  }
 
   if (data.version && data.version.startsWith("2.")) {
+    // check for un-tokenized and tokenize it (this happens
+    // when we've loaded an export from Django)
     data.file_data.forEach((file, index) => {
       if (file.data_raw) {
         file.data = tokenize_document(file.data_raw);
@@ -643,9 +650,3 @@ Keyboard shortcuts:
 
 `);
 });
-/*
-document.querySelector(".toggle-restore").addEventListener("click", (e) => {
-  document.getElementById("restore-modal").style.display = "";
-  document.getElementById("json-restore").addEventListener("change", migrate);
-});
-*/
