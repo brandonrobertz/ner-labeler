@@ -6,9 +6,9 @@ Quickstart:
 
     python -m http.server 8080
 
-The visit the tool at [http://localhost:8080](http://localhost:8080)
+Then visit the tool at [http://localhost:8080](http://localhost:8080)
 
-## Description
+## Loading Data and Setting Labels
 
 This lets you load documents from a folder on disk or from a JSON export, using the first file selector (the one saying "Select or drop a folder, or one or more files, to tag"). After loading, the tool then lets you click on words, labeling them based on the currently selected entity from a global entities list. By default, the entities are set in the code (`index.js`) and look like this:
 
