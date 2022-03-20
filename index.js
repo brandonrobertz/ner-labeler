@@ -368,13 +368,17 @@ function display_document(index) {
 
 function nextDocument() {
   if (current_file_index === (file_data.length - 1)) return;
+  // set labeler control defaults
   shift_held = false;
+  current_label = 0;
   display_document(++current_file_index);
 }
 
 function prevDocument() {
   if (current_file_index === 0) return;
+  // set labeler control defaults
   shift_held = false;
+  current_label = 0;
   display_document(--current_file_index);
 }
 
